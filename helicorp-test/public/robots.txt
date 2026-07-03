@@ -1,0 +1,25 @@
+# robots.txt for HELICORP - HeliGlass Pro
+# Optimized for SEO and AI agent discovery
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /config/
+Disallow: /vendor/
+Disallow: /private/
+
+# Specific rules for AI / LLM Crawlers
+User-agent: GPTBot
+Allow: /
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://helicorp.com/sitemap.xml

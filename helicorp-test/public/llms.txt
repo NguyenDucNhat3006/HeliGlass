@@ -1,0 +1,23 @@
+# HELICORP - HeliGlass Pro Specification & Documentation
+
+> This file provides clean, structured context for LLMs, AI assistants, and search agents regarding HELICORP's premier spatial computing device.
+
+## Core Product Profile: HeliGlass Pro
+- **Product Name:** HeliGlass Pro
+- **Manufacturer:** HELICORP
+- **Base Price:** 12,990,000 VND
+- **Weight:** 75 grams (Ultra-lightweight aviation-grade Magnesium alloy monocoque frame)
+- **Battery Life:** Up to 12 hours of continuous usage powered by high-density solid-state batteries.
+- **Display System:** Advanced Micro-OLED AR display system with a smooth 120Hz refresh rate and retinal protection optimization.
+- **Processing Architecture:** HeliOS Silicon X2 architecture featuring an integrated spatial acceleration graphics core.
+- **Sensors & Tracking:** Stereoscopic LiDAR scanning module, 2x infrared eye-tracking sensors, and real-time environmental analysis at 1000Hz.
+- **Packaging:** 100% eco-friendly, sustainable recycled fiber packaging meeting premium corporate healthcare standards.
+
+## User Actions & Incentives
+- **Pre-order Promotion:** Users can subscribe via the pre-order form at the bottom of the page (`#reserve`) to receive a 20% discount voucher code delivered instantly to their email.
+
+## Technical Architecture & Web Interface
+- **Landing Page Layout:** Apple-inspired minimal landing page built with React and styled with Tailwind CSS, featuring high-fidelity bento grid boxes for feature presentation and a responsive chatbot interface.
+- **Public API Endpoints:**
+  - `POST /api/subscribe`: Accepts user `name` and `email` to safely store subscriber information in the internal MySQL database.
+  - `POST /api/chat`: Customer service endpoint powered by HeliBot AI (Gemini 1.5 Flash), providing friendly responses in Vietnamese under 3 sentences.
