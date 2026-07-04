@@ -1,8 +1,14 @@
 .git
 .gitignore
-README.md
 .env
+README.md
 node_modules
 vendor
 .vscode
 .idea
+.DS_Store
+__pycache__
+*.log
+dist
+.env.local
+.env.*.local

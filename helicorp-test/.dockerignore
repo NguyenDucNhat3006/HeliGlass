@@ -1,0 +1,10 @@
+.git
+.gitignore
+.env
+node_modules
+dist
+.vscode
+.idea
+.DS_Store
+README.md
+vercel.json

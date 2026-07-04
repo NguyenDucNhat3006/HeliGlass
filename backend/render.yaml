@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: helicorp-backend
+    runtime: docker
+    region: singapore
+    plan: free
+    branch: main
+    envVars:
+      - key: DB_HOST
+        value: dpg-cq1234567890-a.singapore-postgres.render.com
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        value: helicorp_db
+      - key: DB_USER
+        fromDatabase:
+          name: helicorp-db
+          property: username
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: helicorp-db
+          property: password
+      - key: GEMINI_API_KEY
+        sync: false
+
+databases:
+  - name: helicorp-db
+    databaseName: helicorp_db
+    user: postgres
+    region: singapore
+    plan: free
