@@ -3,11 +3,9 @@ import { Helmet } from 'react-helmet-async';
 import { Sun, Moon, ShoppingCart, Heart, Radio, Compass, Layers } from 'lucide-react';
 import API_URL from './config/api';
 
-// SỬA VẤN ĐỀ 1: Chuyển sang WebP để giảm dung lượng tải ảnh
 import heroImg from './assets/product/images/hero.webp';
 import bannerImg from './assets/product/images/banner.webp';
 
-// SỬA VẤN ĐỀ 4: Lazy load Chatbot để giảm dung lượng file bundle tải ban đầu
 const HeliBot = lazy(() => import('./HeliBot'));
 
 export default function LandingPage() {
