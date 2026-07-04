@@ -57,8 +57,11 @@ if (preg_match('/\/api\/chat\/?$/', $request_uri) && $method === 'POST') {
     }
 
     $api_key = getenv('GEMINI_API_KEY');
-    $api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $api_key;
+    
+    // Tách biệt API Key ra khỏi URL để tăng tính bảo mật
+    $api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
+    // Cấu trúc Prompt Hệ Thống
     $system_prompt = "Bạn là HeliBot, trợ lý AI tư vấn khách hàng của tập đoàn HELICORP. "
         . "Hãy trả lời câu hỏi của khách hàng ngắn gọn, lịch sự bằng tiếng Việt dưới 3 câu. "
         . "Thông tin sản phẩm: Kính thông minh HeliGlass Pro. Giá: 12.990.000đ. "
@@ -67,12 +70,18 @@ if (preg_match('/\/api\/chat\/?$/', $request_uri) && $method === 'POST') {
         . "Hãy bảo khách đăng ký form ở cuối trang để nhận voucher giảm 20%. "
         . "Tuyệt đối không tự bịa thông tin nằm ngoài phạm vi sản phẩm này.";
 
+    // Cấu trúc Payload chuẩn hóa theo tài liệu kỹ thuật mới nhất của Google Gemini
     $api_payload = [
         "contents" => [
             [
                 "parts" => [
-                    ["text" => $system_prompt . "\n\nKhách hỏi: " . $message]
+                    ["text" => $message]
                 ]
+            ]
+        ],
+        "systemInstruction" => [
+            "parts" => [
+                ["text" => $system_prompt]
             ]
         ]
     ];
@@ -81,7 +90,13 @@ if (preg_match('/\/api\/chat\/?$/', $request_uri) && $method === 'POST') {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($api_payload));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    
+    // ĐƯA API KEY VÀO HEADER: Giải pháp ép buộc máy chủ Google nhận diện khóa "AQ."
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'x-goog-api-key: ' . $api_key
+    ]);
+    
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
     $api_response = curl_exec($ch);
@@ -94,7 +109,12 @@ if (preg_match('/\/api\/chat\/?$/', $request_uri) && $method === 'POST') {
         $botReply = "Cảm ơn bạn đã quan tâm. Kính HeliGlass Pro hiện có giá 12.990.000đ, siêu nhẹ 75g và pin dùng 12 tiếng. Bạn hãy điền form đăng ký phía dưới để nhận ưu đãi 20% nhé!";
     } else {
         $response_data = json_decode($api_response, true);
-        if (isset($response_data['candidates'][0]['content']['parts'][0]['text'])) {
+        
+        // Kiểm tra xem Google có trả về mã lỗi cụ thể nào không (ví dụ lỗi hạn ngạch Quota)
+        if (isset($response_data['error'])) {
+            error_log("Lỗi Gemini API: " . $response_data['error']['message']);
+            $botReply = "Hệ thống đang bận phản hồi, kính HeliGlass Pro siêu nhẹ 75g có giá 12.990.000đ. Bạn đăng ký nhận voucher giảm 20% ở form bên dưới nhé!";
+        } elseif (isset($response_data['candidates'][0]['content']['parts'][0]['text'])) {
             $botReply = trim($response_data['candidates'][0]['content']['parts'][0]['text']);
         } else {
             $botReply = "HeliBot chưa hiểu rõ ý bạn, bạn cần tư vấn về mức giá, trọng lượng hay thời lượng pin của sản phẩm?";
