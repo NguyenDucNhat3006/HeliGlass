@@ -13,7 +13,7 @@ export default function LandingPage() {
     const [favorites, setFavorites] = useState(false);
     const [cart, setCart] = useState(0);
 
-    // Form State (Đã lược bỏ các state liên quan đến chatbot)
+    // Form State
     const [formData, setFormData] = useState({ name: '', email: '' });
     const [formStatus, setFormStatus] = useState({ type: '', msg: '' });
 
@@ -22,7 +22,6 @@ export default function LandingPage() {
         else document.documentElement.classList.remove('dark');
     }, [darkMode]);
 
-    // SỬA VẤN ĐỀ 2: Cache và hủy setup bằng observer.disconnect() chính xác, tránh leak RAM mỗi lần component re-render
     useEffect(() => {
         const elements = document.querySelectorAll('.reveal-on-scroll');
         if (elements.length === 0) return;
@@ -30,20 +29,24 @@ export default function LandingPage() {
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                    observer.unobserve(entry.target); // Phần tử đã hiện thì không cần theo dõi tiếp
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-8');
                 }
             });
-        }, { threshold: 0.05, rootMargin: '0px 0px -50px 0px' });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
         elements.forEach(el => observer.observe(el));
-
-        return () => observer.disconnect(); // Clear sạch bộ nhớ
+        return () => observer.disconnect();
     }, []);
 
     const handleSubscribe = async (e) => {
         e.preventDefault();
-        setFormStatus({ type: 'loading', msg: 'Đang gửi dữ liệu...' });
+        if (!formData.name || !formData.email) {
+            setFormStatus({ type: 'error', msg: 'Vui lòng điền đầy đủ thông tin.' });
+            return;
+        }
+
+        setFormStatus({ type: 'loading', msg: 'Đang xử lý...' });
 
         try {
             const response = await fetch(API_URL + '/api/subscribe', {
@@ -52,211 +55,199 @@ export default function LandingPage() {
                 body: JSON.stringify(formData)
             });
 
-            if (!response.ok) throw new Error('Lỗi server');
+            const data = await response.json();
 
-            setFormStatus({ type: 'success', msg: 'Thông tin đã được lưu trữ an toàn. Cảm ơn bạn.' });
-            setFormData({ name: '', email: '' });
+            if (response.ok) {
+                setFormStatus({ type: 'success', msg: 'Đăng ký nhận ưu đãi thành công!' });
+                setFormData({ name: '', email: '' });
+            } else {
+                setFormStatus({ type: 'error', msg: data.message || 'Có lỗi xảy ra, vui lòng thử lại.' });
+            }
         } catch (error) {
-            setFormStatus({ type: 'error', msg: 'Kết nối máy chủ thất bại. Vui lòng thử lại.' });
+            setFormStatus({ type: 'error', msg: 'Không thể kết nối đến máy chủ.' });
         }
     };
 
     return (
-        <div className={`min-h-screen font-sans antialiased select-none ${darkMode ? 'bg-black text-white' : 'bg-[#ffffff] text-[#1d1d1f]'}`}>
+        <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-50 font-sans transition-colors duration-300">
             <Helmet>
-                <title>HeliGlass Pro — HELICORP</title>
-                <meta name="description" content="Thiết bị tính năng máy tính không gian cao cấp." />
+                <title>HeliGlass Pro - Kính Thực Tế Ảo Thế Hệ Mới bởi HELICORP</title>
+                <meta name="description" content="Khám phá HeliGlass Pro - Thiết bị kính thực tế ảo siêu nhẹ 75g, pin 12 giờ, tích hợp thấu kính phân cực đổi màu linh hoạt từ HELICORP." />
             </Helmet>
 
-            {/* TOP NAVIGATION */}
-            <nav className={`sticky top-0 z-40 border-b ${darkMode ? 'border-neutral-900 bg-black/80' : 'border-neutral-100 bg-white/80'} backdrop-blur-md`}>
-                <div className="container mx-auto max-w-5xl px-4 sm:px-6 h-14 flex justify-between items-center text-xs tracking-tight">
-                    <div className="font-bold text-sm tracking-normal">HELICORP</div>
-
-                    <div className="hidden sm:flex gap-8 font-normal text-neutral-500 dark:text-neutral-400">
-                        <a href="#optics" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Thiết kế</a>
-                        <a href="#specifications" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Thông số</a>
-                        <a href="#reserve" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Đặt trước</a>
-                    </div>
-
-                    <div className="flex items-center gap-3 sm:gap-4">
-                        <button onClick={() => setFavorites(!favorites)} className="p-1 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-                            <Heart className={`w-4 h-4 ${favorites ? 'fill-current text-red-500' : ''}`} />
+            {/* NAVBAR */}
+            <nav className="fixed top-0 left-0 right-0 z-50 bg-neutral-50/80 dark:bg-neutral-950/80 backdrop-blur-md border-b border-neutral-200/50 dark:border-neutral-900/50">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+                    <span className="text-sm font-black tracking-widest text-neutral-900 dark:text-white">
+                        HELI<span className="text-blue-600">CORP</span>
+                    </span>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                        <button 
+                            onClick={() => setDarkMode(!darkMode)}
+                            aria-label={darkMode ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
+                            className="p-2 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-900 text-neutral-600 dark:text-neutral-400 transition-colors"
+                        >
+                            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                         </button>
-                        <button onClick={() => setCart(c => c + 1)} className="p-1 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors relative">
+                        <button 
+                            onClick={() => setFavorites(!favorites)}
+                            aria-label={favorites ? "Xóa khỏi danh sách yêu thích" : "Thêm vào danh sách yêu thích"}
+                            className="p-2 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-900 text-neutral-600 dark:text-neutral-400 transition-colors relative"
+                        >
+                            <Heart className={`w-4 h-4 transition-colors ${favorites ? 'fill-red-500 text-red-500' : ''}`} />
+                        </button>
+                        <button 
+                            onClick={() => setCart(prev => prev + 1)}
+                            aria-label="Thêm vào giỏ hàng và xem giỏ hàng"
+                            className="p-2 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-900 text-neutral-600 dark:text-neutral-400 transition-colors relative"
+                        >
                             <ShoppingCart className="w-4 h-4" />
-                            {cart > 0 && <span className="absolute -top-1 -right-1.5 bg-blue-600 text-white text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold">{cart}</span>}
-                        </button>
-                        <button onClick={() => setDarkMode(!darkMode)} className="p-1 rounded-full bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:scale-105 transition-transform">
-                            {darkMode ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                            {cart > 0 && (
+                                <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-blue-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-scaleIn">
+                                    {cart}
+                                </span>
+                            )}
                         </button>
                     </div>
                 </div>
             </nav>
 
-            {/* 1. HERO SECTION */}
-            <section className="container mx-auto max-w-5xl px-4 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center">
-                <div className="space-y-3">
-                    <span className="text-[10px] sm:text-xs font-bold tracking-widest text-blue-600 dark:text-blue-500 uppercase">Kỷ nguyên không gian mới</span>
-                    <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tighter leading-tight text-neutral-900 dark:text-white">
-                        HeliGlass Pro
-                    </h1>
-                    <p className="text-base sm:text-lg md:text-xl font-normal text-neutral-500 dark:text-neutral-400 max-w-xl mx-auto tracking-tight px-2">
-                        Thấu kính máy tính không gian mỏng nhất thế giới. Tái định nghĩa hoàn toàn phương thức tương tác số của bạn.
-                    </p>
-                    <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">Giá khởi điểm từ 12.990.000đ</p>
+            {/* HERO SECTION */}
+            <header className="relative pt-28 pb-16 sm:pt-36 sm:pb-24 overflow-hidden">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-12 gap-8 items-center relative z-10">
+                    <div className="md:col-span-7 space-y-5 text-center md:text-left">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-semibold uppercase tracking-wider mx-auto md:mx-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+                            Công nghệ độc quyền 2026
+                        </div>
+                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.1] text-neutral-900 dark:text-white">
+                            HeliGlass Pro<br />
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500 dark:from-blue-400 dark:to-indigo-400">
+                                Định Hình Thực Tại Mới
+                            </span>
+                        </h1>
+                        <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto md:mx-0 font-normal leading-relaxed">
+                            Tuyệt tác kính thông minh lai thực tế ảo siêu nhẹ chỉ 75g từ HELICORP. Trải nghiệm không gian làm việc đa màng hình vô hạn cùng thời lượng pin bền bỉ ấn tượng suốt 12 giờ liên tục.
+                        </p>
+                    </div>
+                    <div className="md:col-span-5 relative flex justify-center">
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 blur-3xl rounded-full scale-75 -z-10"></div>
+                        <img
+                            src={heroImg}
+                            alt="Thiết bị kính thực tế ảo HeliGlass Pro cao cấp"
+                            fetchpriority="high"
+                            width="480"
+                            height="320"
+                            className="relative z-10 w-full max-w-[480px] h-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-700 px-4 sm:px-0"
+                        />
+                    </div>
                 </div>
+            </header>
 
-                <div className="mt-10 sm:mt-16 max-w-2xl mx-auto relative flex justify-center items-center py-8 reveal-on-scroll">
-                    <div className="absolute w-[90%] sm:w-[80%] h-[90%] sm:h-[80%] rounded-full bg-gradient-to-tr from-cyan-400 via-blue-500 to-purple-600 opacity-20 blur-2xl sm:blur-3xl -z-10"></div>
-                    {/* SỬA VẤN ĐỀ 1b: Ảnh đầu trang (LCP) bắt buộc phải load đồng bộ trước bằng fetchpriority="high" */}
+            {/* ARCHITECTURE FEATURES */}
+            <main className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-24">
+                <section aria-labelledby="features-heading" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <h2 id="features-heading" className="sr-only">Tính năng nổi bật của HeliGlass Pro</h2>
+                    <div className="reveal-on-scroll opacity-0 translate-y-8 transition-all duration-700 delay-100 p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm space-y-3">
+                        <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <Layers className="w-4 h-4" />
+                        </div>
+                        <h3 className="text-sm font-bold text-neutral-900 dark:text-white">Cơ chế Khúc xạ Đa tần</h3>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed font-normal">
+                            Kiến trúc ống kính Micro-OLED kép thế hệ mới đồng bộ pha tần số cao, giảm thiểu triệt để hiện tượng sai lệch sắc rìa, mang lại độ nét võng mạc hoàn hảo trên từng pixel điểm ảnh.
+                        </p>
+                    </div>
+
+                    <div className="reveal-on-scroll opacity-0 translate-y-8 transition-all duration-700 delay-200 p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm space-y-3">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                            <Radio className="w-4 h-4" />
+                        </div>
+                        <h3 className="text-sm font-bold text-neutral-900 dark:text-white">Thấu kính Phân cực Đổi màu</h3>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed font-normal">
+                            Lớp phủ quang học thông minh tự động tinh chỉnh độ xuyên sáng (VLT) từ 15% đến 85% dựa trên cường độ tia cực tím môi trường thực tế, giúp tối ưu hiển thị cả trong nhà lẫn ngoài trời.
+                        </p>
+                    </div>
+
+                    <div className="reveal-on-scroll opacity-0 translate-y-8 transition-all duration-700 delay-300 p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800/60 shadow-sm space-y-3">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                            <Compass className="w-4 h-4" />
+                        </div>
+                        <h3 className="text-sm font-bold text-neutral-900 dark:text-white">Định vị Không gian 6-DoF</h3>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed font-normal">
+                            Hệ thống cảm biến quán tính IMU siêu nhạy kết hợp thuật toán thị giác máy tính SLAM thời gian thực, khóa cứng các cửa sổ ứng dụng ảo vào không gian cố định với độ trễ gần như bằng 0.
+                        </p>
+                    </div>
+                </section>
+
+                {/* CALL TO ACTION BANNER */}
+                <section aria-labelledby="cta-heading" className="reveal-on-scroll opacity-0 translate-y-8 transition-all duration-1000 relative rounded-3xl overflow-hidden bg-neutral-900 dark:bg-neutral-900 min-h-[320px] sm:min-h-[380px] flex items-center px-6 sm:px-12 text-white">
                     <img
                         src={bannerImg}
-                        alt="Trải nghiệm người dùng HeliGlass"
+                        alt="Không gian trải nghiệm người dùng HeliGlass sinh động"
                         loading="lazy"
                         decoding="async"
-                        width="1920"
-                        height="1080"
-                        className="absolute inset-0 w-full h-full object-cover scale-105 hover:scale-100 transition-transform duration-[20s] ease-out"
+                        width="1024"
+                        height="450"
+                        className="absolute inset-0 w-full h-full object-cover scale-105 hover:scale-100 transition-transform duration-[20s] ease-out opacity-65"
                     />
-                </div>
-            </section>
+                    <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent"></div>
+                    <div className="relative z-10 max-w-md space-y-4">
+                        <h2 id="cta-heading" className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
+                            Sẵn Sàng Trải Nghiệm Khác Biệt?
+                        </h2>
+                        <p className="text-xs text-neutral-300 leading-relaxed font-normal">
+                            Trở thành những người đầu tiên sở hữu đặc quyền công nghệ tương lai từ HELICORP. Đăng ký thông tin ngay hôm nay để nhận thông báo sớm nhất về phiên bản thử nghiệm giới hạn.
+                        </p>
+                    </div>
+                </section>
 
-            {/* 2. FULL WIDTH BANNER */}
-            <section className="w-full relative h-[45vh] sm:h-[75vh] flex items-center justify-center overflow-hidden">
-                {/* SỬA VẤN ĐỀ 1c: Ảnh dưới màn hình cuộn kích hoạt lazy loading và decoding không đồng bộ */}
-                <img
-                    src={bannerImg}
-                    alt="Trải nghiệm người dùng HeliGlass"
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 w-full h-full object-cover scale-105 hover:scale-100 transition-transform duration-[20s] ease-out"
-                />
-                <div className="absolute inset-0 bg-black/40 dark:bg-black/50"></div>
-                <div className={`absolute inset-0 bg-gradient-to-t ${darkMode ? 'from-[#0a0a0b]' : 'from-[#f5f5f7]'} via-transparent to-transparent`}></div>
-                <div className="relative z-10 text-center px-4 reveal-on-scroll">
-                    <h2 className="text-2xl sm:text-5xl font-extrabold text-white tracking-tight drop-shadow-xl">
-                        Tầm nhìn không giới hạn.
-                    </h2>
-                </div>
-            </section>
-
-            {/* 3. BENTO BOX SECTION */}
-            <section id="optics" className="bg-[#f5f5f7] dark:bg-[#0a0a0b] py-16 sm:py-24 border-t border-neutral-100 dark:border-neutral-900">
-                <div className="container mx-auto max-w-5xl px-4 sm:px-6">
-                    <div className="reveal-on-scroll text-left mb-10 space-y-2">
-                        <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white">Thiết kế bởi những chuyên gia.</h2>
-                        <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 font-normal">Tập trung tuyệt đối vào công năng, lược bỏ mọi chi tiết thừa.</p>
+                {/* REGISTRATION FORM */}
+                <section aria-labelledby="register-heading" className="reveal-on-scroll opacity-0 translate-y-8 transition-all duration-700 max-w-md mx-auto space-y-6 pt-6">
+                    <div className="text-center space-y-1.5">
+                        <h2 id="register-heading" className="text-xl sm:text-2xl font-black tracking-tight text-neutral-900 dark:text-white">Đăng ký nhận ưu đãi 20%</h2>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 font-normal">Để lại thông tin để đặt chỗ trước cho phiên bản HeliGlass Pro thương mại.</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                        <div className="reveal-on-scroll md:col-span-2 bg-white dark:bg-[#121214] p-6 sm:p-12 rounded-3xl border border-neutral-200/60 dark:border-neutral-900 flex flex-col justify-between min-h-[16rem] md:min-h-[20rem]">
-                            <div className="space-y-3">
-                                <Radio className="w-5 h-5 text-blue-600 dark:text-blue-500" />
-                                <h3 className="text-lg sm:text-2xl font-bold text-neutral-900 dark:text-white">Tương tác võng mạc</h3>
-                                <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 font-normal leading-relaxed max-w-md">
-                                    Cảm biến quang học kép liên tục quét và tối ưu luồng sáng trực tiếp vào võng mạc, tạo chiều sâu hình ảnh chân thực mà không gây mỏi mắt.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="reveal-on-scroll bg-white dark:bg-[#121214] p-6 sm:p-8 rounded-3xl border border-neutral-200/60 dark:border-neutral-900 flex flex-col justify-between min-h-[16rem] md:min-h-[20rem]">
-                            <div className="space-y-3">
-                                <Compass className="w-5 h-5 text-purple-500" />
-                                <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">Định vị không gian</h3>
-                                <p className="text-xs text-neutral-600 dark:text-neutral-400 font-normal leading-relaxed">
-                                    Chip HeliOS X2 phân tích môi trường xung quanh với tần suất 1000 lần mỗi giây, cố định chuẩn xác trong không gian vật lý.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="reveal-on-scroll bg-white dark:bg-[#121214] p-6 sm:p-8 rounded-3xl border border-neutral-200/60 dark:border-neutral-900 flex flex-col justify-between min-h-[16rem] md:min-h-[20rem]">
-                            <div className="space-y-3">
-                                <Layers className="w-5 h-5 text-emerald-500" />
-                                <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">Vật liệu siêu nhẹ</h3>
-                                <p className="text-xs text-neutral-600 dark:text-neutral-400 font-normal leading-relaxed">
-                                    Toàn bộ cấu trúc khung kính đúc nguyên khối từ hợp kim hàng không, tối ưu hóa trọng lượng chỉ còn đúng 75 gram.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="reveal-on-scroll md:col-span-2 bg-white dark:bg-[#121214] p-6 sm:p-12 rounded-3xl border border-neutral-200/60 dark:border-neutral-900 flex flex-col justify-between min-h-[16rem] md:min-h-[20rem]">
-                            <div className="space-y-3">
-                                <div className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">Độc quyền bởi HELICORP</div>
-                                <h3 className="text-lg sm:text-2xl font-bold text-neutral-900 dark:text-white">Đóng gói bền vững</h3>
-                                <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 font-normal leading-relaxed max-w-md">
-                                    Đảm bảo 100% sợi tái chế thân thiện với môi trường, đáp ứng tiêu chuẩn chăm sóc sức khỏe toàn diện từ tập đoàn.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* 4. TECHNICAL SPECIFICATIONS */}
-            <section id="specifications" className="container mx-auto max-w-3xl px-4 sm:px-6 py-16 sm:py-24">
-                <div className="reveal-on-scroll space-y-8">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900 dark:text-white text-center">Thông số kỹ thuật.</h2>
-                    <div className="divide-y divide-neutral-200 dark:divide-neutral-800 text-xs sm:text-sm">
-                        {[
-                            { title: "Màn hình hiển thị", value: "Hệ thống Micro-OLED AR, tần số quét 120Hz mượt mà" },
-                            { title: "Cảm biến tích hợp", value: "Mô-đun LiDAR quét lập thể, 2x cảm biến tracking mắt hồng ngoại" },
-                            { title: "Kiến trúc vi xử lý", value: "HeliOS Silicon X2 tích hợp nhân đồ họa tăng tốc không gian" },
-                            { title: "Thời lượng", value: "Pin thể rắn mật độ cao, thời gian vận hành liên tục 12 giờ" }
-                        ].map((item, index) => (
-                            <div key={index} className="py-4 sm:py-5 flex flex-col sm:flex-row justify-between gap-1">
-                                <div className="font-semibold text-neutral-900 dark:text-neutral-100 sm:w-1/3">{item.title}</div>
-                                <div className="text-neutral-600 dark:text-neutral-400 font-normal sm:w-2/3">{item.value}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* 5. PRE-ORDER FORM */}
-            <section id="reserve" className="border-t border-neutral-200 dark:border-neutral-900 bg-[#f5f5f7] dark:bg-[#0a0a0b] py-16 sm:py-24 px-4 sm:px-6 text-center">
-                <div className="reveal-on-scroll max-w-md mx-auto space-y-6">
-                    <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white">Đặt chỗ sớm.</h2>
-                    <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 font-normal">Hệ thống sẽ gửi mã ưu đãi giảm giá 20% vào email của bạn.</p>
-
-                    <form onSubmit={handleSubscribe} className="space-y-4 text-left">
-                        <div>
-                            <label className="block text-[10px] sm:text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase mb-1.5">Họ và tên</label>
+                    <form onSubmit={handleSubscribe} className="space-y-3">
+                        <div className="space-y-1">
                             <input
                                 type="text"
-                                required
+                                placeholder="Họ và tên của bạn"
+                                aria-label="Nhập họ và tên của bạn"
                                 value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#121214] border border-neutral-300 dark:border-neutral-800 focus:border-blue-500 focus:outline-none font-medium text-xs sm:text-sm text-neutral-900 dark:text-white shadow-sm"
+                                onChange={(e) => setFormData(e.name = e.target.value)}
+                                className="w-full px-4 py-2.5 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-blue-500 dark:focus:border-blue-500 transition-colors"
                             />
                         </div>
-                        <div>
-                            <label className="block text-[10px] sm:text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase mb-1.5">Địa chỉ Email</label>
-                            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
-                                <input
-                                    type="email"
-                                    required
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#121214] border border-neutral-300 dark:border-neutral-800 focus:border-blue-500 focus:outline-none font-medium text-xs sm:text-sm text-neutral-900 dark:text-white shadow-sm"
-                                />
-                                <button type="submit" className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-md shrink-0">
-                                    Đăng ký
-                                </button>
-                            </div>
+                        <div className="space-y-1">
+                            <input
+                                type="email"
+                                placeholder="Địa chỉ email cá nhân"
+                                aria-label="Nhập địa chỉ email cá nhân"
+                                value={formData.email}
+                                onChange={(e) => setFormData(e.email = e.target.value)}
+                                className="w-full px-4 py-2.5 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-blue-500 dark:focus:border-blue-500 transition-colors"
+                            />
                         </div>
+                        <button
+                            type="submit"
+                            className="w-full py-2.5 rounded-xl text-xs font-bold tracking-wide bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/10 transition-all flex items-center justify-center gap-1.5"
+                        >
+                            Gửi Đăng Ký Bản Thử Nghiệm
+                        </button>
                     </form>
 
                     {formStatus.msg && (
-                        <div className={`p-3.5 rounded-xl text-xs font-semibold ${formStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        <div className={`p-3 rounded-xl text-center text-xs font-medium animate-fadeIn ${
+                            formStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                             : formStatus.type === 'error' ? 'bg-red-500/10 text-red-600 dark:text-red-400'
                                 : 'text-blue-500'
                             }`}>
                             {formStatus.msg}
                         </div>
                     )}
-                </div>
-            </section>
+                </section>
+            </main>
 
             {/* FOOTER */}
             <footer className="max-w-5xl mx-auto px-4 sm:px-6 py-8 text-[10px] sm:text-[11px] text-neutral-400 dark:text-neutral-500 font-normal leading-relaxed space-y-4">
@@ -270,7 +261,7 @@ export default function LandingPage() {
                 </div>
             </footer>
 
-            {/* SỬA VẤN ĐỀ 4b: Khởi chạy Chatbot bất đồng bộ thông qua lớp bọc Suspense */}
+            {/* CHATBOT LAZY LOAD */}
             <Suspense fallback={null}>
                 <HeliBot />
             </Suspense>
