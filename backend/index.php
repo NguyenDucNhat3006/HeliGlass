@@ -110,13 +110,19 @@ if (preg_match('/\/api\/chat\/?$/', $request_uri) && $method === 'POST') {
     } else {
         $response_data = json_decode($api_response, true);
         
-        // Kiểm tra xem Google có trả về mã lỗi cụ thể nào không (ví dụ lỗi hạn ngạch Quota)
+        // 1. Kiểm tra xem Google có trả về lỗi hệ thống/hết hạn ngạch hay không
         if (isset($response_data['error'])) {
             error_log("Lỗi Gemini API: " . $response_data['error']['message']);
-            $botReply = "Hệ thống đang bận phản hồi, kính HeliGlass Pro siêu nhẹ 75g có giá 12.990.000đ. Bạn đăng ký nhận voucher giảm 20% ở form bên dưới nhé!";
+            $botReply = "Hệ thống đang bảo trì kết nối, kính HeliGlass Pro siêu nhẹ 75g có giá 12.990.000đ. Bạn đăng ký nhận voucher giảm 20% ở form bên dưới nhé!";
+        
+        // 2. SỬA TẠI ĐÂY: Thêm chỉ mục mảng [0] cho đúng cấu trúc mảng JSON của Gemini
         } elseif (isset($response_data['candidates'][0]['content']['parts'][0]['text'])) {
             $botReply = trim($response_data['candidates'][0]['content']['parts'][0]['text']);
+        
+        // 3. Trường hợp API trả về rỗng hoặc không đúng định dạng mong muốn
         } else {
+            // Ghi log phản hồi thực tế từ Google để bạn dễ dàng debug khi cần thiết
+            error_log("Phản hồi không xác định từ API: " . $api_response);
             $botReply = "HeliBot chưa hiểu rõ ý bạn, bạn cần tư vấn về mức giá, trọng lượng hay thời lượng pin của sản phẩm?";
         }
     }
