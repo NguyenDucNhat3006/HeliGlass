@@ -42,7 +42,6 @@ export default function HeliBot() {
     return (
         <div className="fixed bottom-4 right-4 z-50 font-sans text-xs">
             <div className="relative flex flex-col items-end">
-                {/* FLOATING ACTION BUTTON */}
                 <button
                     onClick={() => setShowChat(!showChat)}
                     aria-label={showChat ? "Đóng hộp thoại tư vấn HeliBot" : "Mở hộp thoại tư vấn HeliBot"}
