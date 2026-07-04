@@ -37,7 +37,7 @@ export default function LandingPage() {
         }, { threshold: 0.05, rootMargin: '0px 0px -50px 0px' });
 
         elements.forEach(el => observer.observe(el));
-        
+
         return () => observer.disconnect(); // Clear sạch bộ nhớ
     }, []);
 
@@ -111,10 +111,13 @@ export default function LandingPage() {
                     <div className="absolute w-[90%] sm:w-[80%] h-[90%] sm:h-[80%] rounded-full bg-gradient-to-tr from-cyan-400 via-blue-500 to-purple-600 opacity-20 blur-2xl sm:blur-3xl -z-10"></div>
                     {/* SỬA VẤN ĐỀ 1b: Ảnh đầu trang (LCP) bắt buộc phải load đồng bộ trước bằng fetchpriority="high" */}
                     <img
-                        src={heroImg}
-                        alt="Kính thực tế ảo HeliGlass Pro"
-                        fetchpriority="high"
-                        className="relative z-10 w-full h-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-700 px-4 sm:px-0"
+                        src={bannerImg}
+                        alt="Trải nghiệm người dùng HeliGlass"
+                        loading="lazy"
+                        decoding="async"
+                        width="1920"
+                        height="1080"
+                        className="absolute inset-0 w-full h-full object-cover scale-105 hover:scale-100 transition-transform duration-[20s] ease-out"
                     />
                 </div>
             </section>
@@ -246,8 +249,8 @@ export default function LandingPage() {
 
                     {formStatus.msg && (
                         <div className={`p-3.5 rounded-xl text-xs font-semibold ${formStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                : formStatus.type === 'error' ? 'bg-red-500/10 text-red-600 dark:text-red-400'
-                                    : 'text-blue-500'
+                            : formStatus.type === 'error' ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                                : 'text-blue-500'
                             }`}>
                             {formStatus.msg}
                         </div>
