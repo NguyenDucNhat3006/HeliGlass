@@ -1,6 +1,19 @@
 RewriteEngine On
 
+# Gỡ cache cho API
+<FilesMatch "\.php$">
+    Header always set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header always set Pragma "no-cache"
+    Header always set Expires "0"
+</FilesMatch>
+
+# Cho phép CORS
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+Header always set Access-Control-Max-Age "86400"
+
+# URL rewrite cho SPA
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-
 RewriteRule ^(.*)$ index.php [QSA,L]

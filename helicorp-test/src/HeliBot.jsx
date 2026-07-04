@@ -8,34 +8,51 @@ export default function HeliBot() {
     const [chatLogs, setChatLogs] = useState([
         { sender: 'bot', text: 'Xin chào. Tôi có thể cung cấp thông tin gì về cấu trúc phần cứng của HeliGlass Pro?' }
     ]);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSendMessage = async () => {
-        if (!chatInput.trim()) return;
+        if (!chatInput.trim() || isLoading) return;
 
         const userMsg = chatInput;
         setChatLogs(prev => [...prev, { sender: 'user', text: userMsg }]);
         setChatInput('');
-        setChatLogs(prev => [...prev, { sender: 'bot', text: '...', isTyping: true }]);
+        setChatLogs(prev => [...prev, { sender: 'bot', text: '⏳ Đang xử lý...', isTyping: true }]);
+        setIsLoading(true);
 
         try {
-            const response = await fetch(API_URL + '/api/chat', {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const response = await fetch(`${API_URL}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userMsg })
+                body: JSON.stringify({ message: userMsg }),
+                signal: controller.signal
             });
 
-            if (!response.ok) throw new Error('Lỗi API');
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status} ${response.statusText}`);
+            }
+
             const data = await response.json();
 
             setChatLogs(prev => {
                 const filteredLogs = prev.filter(log => !log.isTyping);
-                return [...filteredLogs, { sender: 'bot', text: data.reply }];
+                return [...filteredLogs, { sender: 'bot', text: data.reply || 'Không có phản hồi từ server' }];
             });
         } catch (error) {
+            console.error('Chat error:', error);
             setChatLogs(prev => {
                 const filteredLogs = prev.filter(log => !log.isTyping);
-                return [...filteredLogs, { sender: 'bot', text: 'Rất tiếc, hệ thống đang bận phản hồi. Bạn vui lòng thử lại sau ít phút!' }];
+                const errorMsg = error.name === 'AbortError' 
+                    ? '⏱️ Kết nối hết thời gian. Vui lòng thử lại.'
+                    : `❌ Lỗi: ${error.message}. API URL: ${API_URL}/api/chat`;
+                return [...filteredLogs, { sender: 'bot', text: errorMsg }];
             });
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -66,11 +83,11 @@ export default function HeliBot() {
                         <div className="flex-1 p-3 overflow-y-auto space-y-2.5 bg-neutral-50/50 dark:bg-neutral-900/10">
                             {chatLogs.map((log, index) => (
                                 <div key={index} className={`flex ${log.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[85%] px-3 py-2 rounded-xl break-words whitespace-pre-wrap ${
+                                    <div className={`max-w-[85%] px-3 py-2 rounded-xl break-words whitespace-pre-wrap text-[12px] ${
                                         log.sender === 'user' 
                                             ? 'bg-blue-600 text-white rounded-tr-none' 
                                             : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 rounded-tl-none'
-                                    } ${log.isTyping ? 'animate-pulse text-neutral-400' : ''}`}>
+                                    } ${log.isTyping ? 'animate-pulse' : ''}`}>
                                         {log.text}
                                     </div>
                                 </div>
@@ -85,13 +102,15 @@ export default function HeliBot() {
                                 aria-label="Nhập nội dung câu hỏi cho HeliBot"
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                className="flex-1 px-3 py-2 rounded-xl text-xs bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white focus:outline-none min-w-0"
+                                onKeyDown={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
+                                disabled={isLoading}
+                                className="flex-1 px-3 py-2 rounded-xl text-xs bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white focus:outline-none min-w-0 disabled:opacity-50"
                             />
                             <button 
-                                onClick={handleSendMessage} 
+                                onClick={handleSendMessage}
+                                disabled={isLoading}
                                 aria-label="Gửi tin nhắn tư vấn"
-                                className="p-2 sm:p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shrink-0 flex items-center justify-center"
+                                className="p-2 sm:p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shrink-0 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Send className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                             </button>

@@ -1,7 +1,46 @@
 version: "3.8"
 
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: helicorp-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: helicorp_db
+      MYSQL_ALLOW_EMPTY_PASSWORD: "false"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   php:
     build: .
+    container_name: helicorp-php
     ports:
       - "8080:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: helicorp_db
+      DB_USER: root
+      DB_PASSWORD: root
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    volumes:
+      - .:/var/www/html
+    networks:
+      - helicorp-network
+
+volumes:
+  mysql_data:
+
+networks:
+  helicorp-network:
+    driver: bridge
