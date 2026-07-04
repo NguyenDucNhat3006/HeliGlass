@@ -1,27 +1,28 @@
 FROM php:8.3-apache
 
-# Update package manager
+# Cài đặt các thư viện cần thiết
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable Apache modules
+# Bật các module quan trọng của Apache
 RUN a2enmod rewrite headers
 
-# Install PHP extensions
+# Cài đặt PHP extensions
 RUN docker-php-ext-install -j$(nproc) pdo pdo_mysql mysqli
 
-# Copy application
+# Copy toàn bộ code vào thư mục web
 COPY . /var/www/html/
 
-# Set permissions
+# Phân quyền cho Apache
 RUN chown -R www-data:www-data /var/www/html
 
-# Enable .htaccess
-RUN sed -i 's/<Directory \/var\/www\/html>\n  Options Indexes FollowSymLinks\n  AllowOverride None/<Directory \/var\/www\/html>\n  Options Indexes FollowSymLinks\n  AllowOverride All/' /etc/apache2/sites-available/000-default.conf || true
-
-RUN echo '<Directory /var/www/html>\n    AllowOverride All\n    Require all granted\n</Directory>' > /etc/apache2/conf-available/htaccess.conf && \
-    a2enconf htaccess
+RUN echo "<Directory /var/www/html>\n\
+    AllowOverride All\n\
+    Require all granted\n\
+    FallbackResource /index.php\n\
+</Directory>" > /etc/apache2/conf-available/custom-routing.conf \
+    && a2enconf custom-routing
 
 EXPOSE 80
 
